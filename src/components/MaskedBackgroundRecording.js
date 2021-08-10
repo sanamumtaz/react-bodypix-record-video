@@ -43,7 +43,7 @@ export const MaskedBackgroundRecording = () => {
         tempImgCanvas.height = backgroundImg.height
         const tempImgCanvasCtx = tempImgCanvas.getContext("2d")
         tempImgCanvasCtx.drawImage(backgroundImg, 0, 0)
-        const {data: imgData} = tempImgCanvasCtx.getImageData(
+        const { data: imgData } = tempImgCanvasCtx.getImageData(
           0,
           0,
           backgroundImg.width,
@@ -53,9 +53,7 @@ export const MaskedBackgroundRecording = () => {
         async function renderMaskFrame() {
           frameId.current = requestAnimationFrame(renderMaskFrame)
 
-          const segmentation = await bodypixnet.segmentPerson(videoInput, {
-            internalResolution: 'medium',
-          })
+          const segmentation = await bodypixnet.segmentPerson(videoInput)
           context.drawImage(
             videoInput,
             0,
@@ -78,20 +76,31 @@ export const MaskedBackgroundRecording = () => {
           const newCanvasData = newBlankCanvas.data
           const { data: mapp } = segmentation
 
-          for(let i=0; i<mapp.length; i++) {
+          for (let i = 0; i < mapp.length; i++) {
             //The data array stores four values for each pixel
-            const [r, g, b, a] = [canvasData[i*4], canvasData[i*4+1], canvasData[i*4+2], canvasData[i*4+3]];
-            [
-              newCanvasData[i*4],
-              newCanvasData[i*4+1],
-              newCanvasData[i*4+2],
-              newCanvasData[i*4+3]
-            ] = !mapp[i] ? [imgData[i*4], imgData[i*4+1], imgData[i*4+2], imgData[i*4+3]] : [r, g, b, a];
+            const [r, g, b, a] = [
+              canvasData[i * 4],
+              canvasData[i * 4 + 1],
+              canvasData[i * 4 + 2],
+              canvasData[i * 4 + 3],
+            ]
+            ;[
+              newCanvasData[i * 4],
+              newCanvasData[i * 4 + 1],
+              newCanvasData[i * 4 + 2],
+              newCanvasData[i * 4 + 3],
+            ] = !mapp[i]
+              ? [
+                  imgData[i * 4],
+                  imgData[i * 4 + 1],
+                  imgData[i * 4 + 2],
+                  imgData[i * 4 + 3],
+                ]
+              : [r, g, b, a]
           }
-          console.log(newCanvasData)
-          
+
           // Draw the new image back to canvas
-          context.putImageData(newBlankCanvas, 0, 0);
+          context.putImageData(newBlankCanvas, 0, 0)
         }
         renderMaskFrame()
       }
@@ -133,13 +142,13 @@ export const MaskedBackgroundRecording = () => {
 
   //cancel requestAnimationFrame on unmount
   const cleanUpFrames = useCallback(() => {
-      frameId && cancelAnimationFrame(frameId.current)
+    frameId && cancelAnimationFrame(frameId.current)
   }, [frameId])
 
   useEffect(() => {
-      return () => {
-          cleanUpFrames()
-      }
+    return () => {
+      cleanUpFrames()
+    }
   }, [])
 
   useEffect(() => {
@@ -158,7 +167,7 @@ export const MaskedBackgroundRecording = () => {
           left: 0,
           right: 0,
           textAlign: "center",
-          zindex: 9
+          zindex: 9,
         }}
       />
       <video ref={recordedVideoRef} controls></video>
