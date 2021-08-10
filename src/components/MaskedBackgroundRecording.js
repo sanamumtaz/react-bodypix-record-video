@@ -4,6 +4,7 @@ import * as bodyPix from "@tensorflow-models/body-pix"
 
 export const MaskedBackgroundRecording = () => {
   const [isRecording, setIsRecording] = useState(false)
+  const [audioTrack, setAudioTrack] = useState(null)
   const frameId = useRef(null)
   const canvasReference = useRef(null)
   const videoRef = useRef(null)
@@ -20,6 +21,8 @@ export const MaskedBackgroundRecording = () => {
       audio: true,
     })
     videoElement.srcObject = stream
+    const tracks = stream.getAudioTracks()
+    setAudioTrack(tracks[0])
     return new Promise((resolve) => {
       videoElement.onloadedmetadata = () => {
         videoElement.play()
@@ -125,6 +128,7 @@ export const MaskedBackgroundRecording = () => {
   const handleCaptureStream = useCallback(() => {
     setIsRecording(true)
     const stream = canvasReference.current.captureStream()
+    stream.addTrack(audioTrack)
     mediaRecorderRef.current = new MediaRecorder(stream, {
       mimeType: "video/webm",
     })
@@ -133,7 +137,7 @@ export const MaskedBackgroundRecording = () => {
       recordedVideoRef.current.src = url
     })
     mediaRecorderRef.current.start()
-  }, [canvasReference, mediaRecorderRef, setIsRecording])
+  }, [canvasReference, mediaRecorderRef, setIsRecording, audioTrack])
 
   const handleStopCaptureClick = useCallback(() => {
     mediaRecorderRef.current.stop()
