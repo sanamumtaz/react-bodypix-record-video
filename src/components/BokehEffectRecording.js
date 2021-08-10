@@ -53,9 +53,11 @@ export const BokehEffectRecording = () => {
   const loadCamAndModel = async () => {
     const videoElement = videoRef.current
     const canvasElement = canvasReference.current
-    canvasElement.width = videoElement.width
-    canvasElement.height = videoElement.height
     await setupCamera(videoElement)
+    videoElement.width = videoElement.videoWidth
+    videoElement.height = videoElement.videoHeight
+    canvasElement.width = videoElement.videoWidth
+    canvasElement.height = videoElement.videoHeight
     tf.getBackend()
     const bodypixnet = await bodyPix.load()
     segmentBodyAndBlur(videoElement, canvasElement, bodypixnet)
@@ -96,7 +98,7 @@ export const BokehEffectRecording = () => {
 
   return (
     <>
-      <video ref={videoRef} id="input" width="640" height="480" muted></video>
+      <video ref={videoRef} id="input" muted></video>
       <canvas
         ref={canvasReference}
         id="canvas"
@@ -107,8 +109,6 @@ export const BokehEffectRecording = () => {
           right: 0,
           textAlign: "center",
           zindex: 9,
-          width: 640,
-          height: 480,
         }}
       />
       <video ref={recordedVideoRef} controls></video>

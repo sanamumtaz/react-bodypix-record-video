@@ -102,10 +102,12 @@ export const MaskedBackgroundRecording = () => {
 
   const loadCamAndModel = async () => {
     const videoElement = videoRef.current
-    const canvasElement = canvasReference.current
-    canvasElement.width = videoElement.width
-    canvasElement.height = videoElement.height
     await setupCamera(videoElement)
+    const canvasElement = canvasReference.current
+    videoElement.width = videoElement.videoWidth
+    videoElement.height = videoElement.videoHeight
+    canvasElement.width = videoElement.videoWidth
+    canvasElement.height = videoElement.videoHeight
     tf.getBackend()
     const bodypixnet = await bodyPix.load()
     segmentBodyAndAddMask(videoElement, canvasElement, bodypixnet)
@@ -146,7 +148,7 @@ export const MaskedBackgroundRecording = () => {
 
   return (
     <>
-      <video ref={videoRef} id="input" width="640" height="480" muted></video>
+      <video ref={videoRef} id="input" muted></video>
       <canvas
         ref={canvasReference}
         id="canvas"
@@ -156,9 +158,7 @@ export const MaskedBackgroundRecording = () => {
           left: 0,
           right: 0,
           textAlign: "center",
-          zindex: 9,
-          width: 640,
-          height: 480,
+          zindex: 9
         }}
       />
       <video ref={recordedVideoRef} controls></video>
