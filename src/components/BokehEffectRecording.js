@@ -4,7 +4,7 @@ import * as bodyPix from "@tensorflow-models/body-pix"
 
 export const BokehEffectRecording = () => {
   //const [isRecording, setIsRecording] = useState(false)
-  const [audioTrack, setAudioTrack] = useState(null)
+  //const [audioTrack, setAudioTrack] = useState(null)
   const frameId = useRef(null)
   const canvasReference = useRef(null)
   const videoRef = useRef(null)
@@ -21,8 +21,8 @@ export const BokehEffectRecording = () => {
       audio: true,
     })
     videoElement.srcObject = stream
-    const tracks = stream.getAudioTracks()
-    setAudioTrack(tracks[0])
+    // const tracks = stream.getAudioTracks()
+    // setAudioTrack(tracks[0])
     return new Promise((resolve) => {
       videoElement.onloadedmetadata = () => {
         videoElement.play()
@@ -35,8 +35,8 @@ export const BokehEffectRecording = () => {
     (videoInput, canvasOutput, bodypixnet) => {
       async function renderFrame() {
         const segmentation = await bodypixnet.segmentPerson(videoInput)
-        const backgroundBlurAmount = 4
-        const edgeBlurAmount = 3
+        const backgroundBlurAmount = 5
+        const edgeBlurAmount = 4
         const flipHorizontal = false
         bodyPix.drawBokehEffect(
           canvasOutput,
@@ -57,10 +57,8 @@ export const BokehEffectRecording = () => {
     const videoElement = videoRef.current
     const canvasElement = canvasReference.current
     await setupCamera(videoElement)
-    videoElement.width = videoElement.videoWidth
-    videoElement.height = videoElement.videoHeight
-    canvasElement.width = videoElement.videoWidth
-    canvasElement.height = videoElement.videoHeight
+    videoElement.width = canvasElement.width = videoElement.videoWidth
+    videoElement.height = canvasElement.height = videoElement.videoHeight
     tf.getBackend()
     const bodypixnet = await bodyPix.load()
     segmentBodyAndBlur(videoElement, canvasElement, bodypixnet)
@@ -102,16 +100,26 @@ export const BokehEffectRecording = () => {
 
   return (
     <>
-      <video ref={videoRef} id="input" muted></video>
+      <video
+        ref={videoRef}
+        id="input"
+        muted
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          margin: "auto",
+          zindex: 1,
+        }}
+      ></video>
       <canvas
         ref={canvasReference}
         id="canvas"
         style={{
-          marginLeft: "auto",
-          marginRight: "auto",
+          position: "absolute",
           left: 0,
           right: 0,
-          textAlign: "center",
+          margin: "auto",
           zindex: 9,
         }}
       />
