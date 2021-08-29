@@ -4,7 +4,7 @@ import * as bodyPix from "@tensorflow-models/body-pix"
 
 export const MaskedBackgroundRecording = () => {
   //const [isRecording, setIsRecording] = useState(false)
-  const [audioTrack, setAudioTrack] = useState(null)
+  //const [audioTrack, setAudioTrack] = useState(null)
   const frameId = useRef(null)
   const canvasReference = useRef(null)
   const videoRef = useRef(null)
@@ -21,8 +21,8 @@ export const MaskedBackgroundRecording = () => {
       audio: true,
     })
     videoElement.srcObject = stream
-    const tracks = stream.getAudioTracks()
-    setAudioTrack(tracks[0])
+    // const tracks = stream.getAudioTracks()
+    // setAudioTrack(tracks[0])
     return new Promise((resolve) => {
       videoElement.onloadedmetadata = () => {
         videoElement.play()
@@ -40,23 +40,46 @@ export const MaskedBackgroundRecording = () => {
       backgroundImg.width = "640"
       backgroundImg.height = "480"
       backgroundImg.objectFit = "contain"
+
       backgroundImg.onload = function () {
         const tempImgCanvas = document.createElement("canvas")
-        tempImgCanvas.width = backgroundImg.width
-        tempImgCanvas.height = backgroundImg.height
+        tempImgCanvas.width = canvasOutput.width
+        tempImgCanvas.height = canvasOutput.height
         const tempImgCanvasCtx = tempImgCanvas.getContext("2d")
-        tempImgCanvasCtx.drawImage(backgroundImg, 0, 0)
-        const { data: imgData } = tempImgCanvasCtx.getImageData(
-          0,
-          0,
-          backgroundImg.width,
-          backgroundImg.height
-        )
 
         async function renderMaskFrame() {
           frameId.current = requestAnimationFrame(renderMaskFrame)
 
+          //perform segmentation and create a mask from the output
           const segmentation = await bodypixnet.segmentPerson(videoInput)
+          const mask = bodyPix.toMask(segmentation)
+          tempImgCanvasCtx.putImageData(mask, 0, 0)
+
+          context.save()
+          context.clearRect(0, 0, canvasOutput.width, canvasOutput.height)
+          //draw the mask
+          context.globalCompositeOperation = "copy"
+          context.filter = `blur(4px)`
+          context.drawImage(
+            tempImgCanvas,
+            0,
+            0,
+            canvasOutput.width,
+            canvasOutput.height
+          )
+          //draw the virtual background
+          context.globalCompositeOperation = "source-in"
+          context.filter = "none"
+          context.drawImage(
+            backgroundImg,
+            0,
+            0,
+            canvasOutput.width,
+            canvasOutput.height
+          )
+          //finally, draw the video stream
+          context.globalCompositeOperation = "destination-over"
+          context.filter = "none"
           context.drawImage(
             videoInput,
             0,
@@ -64,46 +87,8 @@ export const MaskedBackgroundRecording = () => {
             canvasOutput.width,
             canvasOutput.height
           )
-          const { data: canvasData } = context.getImageData(
-            0,
-            0,
-            canvasOutput.width,
-            canvasOutput.height
-          )
 
-          // Creating new image data
-          const newBlankCanvas = context.createImageData(
-            canvasOutput.width,
-            canvasOutput.height
-          )
-          const newCanvasData = newBlankCanvas.data
-          const { data: mapp } = segmentation
-
-          for (let i = 0; i < mapp.length; i++) {
-            //The data array stores four values for each pixel
-            const [r, g, b, a] = [
-              canvasData[i * 4],
-              canvasData[i * 4 + 1],
-              canvasData[i * 4 + 2],
-              canvasData[i * 4 + 3],
-            ]
-            ;[
-              newCanvasData[i * 4],
-              newCanvasData[i * 4 + 1],
-              newCanvasData[i * 4 + 2],
-              newCanvasData[i * 4 + 3],
-            ] = !mapp[i]
-              ? [
-                  imgData[i * 4],
-                  imgData[i * 4 + 1],
-                  imgData[i * 4 + 2],
-                  imgData[i * 4 + 3],
-                ]
-              : [r, g, b, a]
-          }
-
-          // Draw the new image back to canvas
-          context.putImageData(newBlankCanvas, 0, 0)
+          context.restore()
         }
         renderMaskFrame()
       }
@@ -116,10 +101,8 @@ export const MaskedBackgroundRecording = () => {
     const videoElement = videoRef.current
     await setupCamera(videoElement)
     const canvasElement = canvasReference.current
-    videoElement.width = videoElement.videoWidth
-    videoElement.height = videoElement.videoHeight
-    canvasElement.width = videoElement.videoWidth
-    canvasElement.height = videoElement.videoHeight
+    videoElement.width = canvasElement.width = videoElement.videoWidth
+    videoElement.height = canvasElement.height = videoElement.videoHeight
     tf.getBackend()
     const bodypixnet = await bodyPix.load()
     segmentBodyAndAddMask(videoElement, canvasElement, bodypixnet)
@@ -161,16 +144,26 @@ export const MaskedBackgroundRecording = () => {
 
   return (
     <>
-      <video ref={videoRef} id="input" muted></video>
+      <video
+        ref={videoRef}
+        id="input"
+        muted
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          margin: "auto",
+          zindex: 1,
+        }}
+      ></video>
       <canvas
         ref={canvasReference}
         id="canvas"
         style={{
-          marginLeft: "auto",
-          marginRight: "auto",
+          position: "absolute",
           left: 0,
           right: 0,
-          textAlign: "center",
+          margin: "auto",
           zindex: 9,
         }}
       />
